@@ -1,51 +1,11 @@
 Package: similR
-Type: Package
-Title: Local Recommendation of Institutional Scientific Literature
-Version: 0.2.0.9000
-Authors@R:
-    person(
-      given = "Henry",
-      family = "Osorto",
-      email = "henry.osorto@unitec.edu.hn",
-      role = c("aut", "cre")
-    )
-Description: Provides a local Shiny application and reproducible data pipeline
-    for recommending institutional scientific literature. The package imports,
-    cleans, deduplicates, versions, validates, and stores bibliographic records
-    in DuckDB databases distributed through GitHub Releases. Recommendation
-    engines are designed to operate locally and to support both lexical and
-    semantic similarity in subsequent development phases.
-License: MIT + file LICENSE
-URL: https://github.com/REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY
-BugReports: https://github.com/REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY/issues
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R: 
+    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+Description: What the package does (one paragraph).
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
-Depends:
-    R (>= 4.2.0)
-Imports:
-    bslib,
-    cli,
-    DBI,
-    digest,
-    dplyr,
-    duckdb,
-    fs,
-    httr2,
-    janitor,
-    jsonlite,
-    purrr,
-    readr,
-    rlang,
-    shiny,
-    stringi,
-    stringr,
-    tibble,
-    tidyr
-Suggests:
-    readxl,
-    shinytest2,
-    testthat (>= 3.2.0),
-    webfakes,
-    withr
-Config/testthat/edition: 3
+RoxygenNote: 8.0.0
