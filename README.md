@@ -1,35 +1,40 @@
+
 # similR
 
-`similR` is an R package and local Shiny application for discovering institutional scientific literature related to a new research project.
+`similR` es un paquete de R y una aplicación Shiny local para descubrir artículos científicos institucionales relacionados con una nueva investigación.
 
-## Development status
+## Estado de desarrollo
 
-Phase 2 includes:
+La Fase 3 incorpora:
 
-- local data lifecycle and GitHub Releases;
-- generic bibliographic import;
-- Scopus-compatible column mapping;
-- cleaning and stable identifiers;
-- exact duplicate consolidation and approximate duplicate diagnostics;
-- bilingual rule-based extraction of theme, purpose, method, data and context;
-- incremental comparison against a previous DuckDB database;
-- construction and validation of versioned DuckDB Releases;
-- preparation of normalized lexical documents;
-- optional storage and reuse of precomputed embeddings.
+- ciclo local de datos y actualización mediante GitHub Releases;
+- importación y procesamiento de bases bibliográficas institucionales;
+- limpieza, deduplicación e identificadores estables;
+- construcción de textos para tema, propósito, método, datos y contexto;
+- base DuckDB y preparación incremental de Releases;
+- índice lexical local mediante matrices dispersas;
+- similitud coseno TF-IDF;
+- ranking BM25;
+- coincidencias exactas de métodos, países, poblaciones, bases de datos y DOI;
+- ponderación multidimensional con renormalización de campos vacíos;
+- función programática `recommend_articles()`;
+- aplicación Shiny modular con tabla, filtros, descarga y detalles.
 
-The lexical ranking engine will be added in Phase 3 and the Python semantic engine in Phase 4.
+El motor semántico con embeddings y Python se incorporará en la Fase 4. Mientras tanto, `engine = "auto"` selecciona el motor lexical.
 
-## Installation during development
+## Instalación durante el desarrollo
 
 ```r
 install.packages("pak")
-pak::pkg_install("REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY")
+
+pak::pkg_install(
+  "REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY"
+)
 
 library(similR)
-run_app(engine = "lexical")
 ```
 
-## Configure the GitHub data repository
+## Configurar el repositorio de datos
 
 ```r
 options(
@@ -38,12 +43,79 @@ options(
 )
 ```
 
-These values should ultimately be placed in `R/config.R` before publishing the package.
+Antes de publicar el paquete, estos valores deben definirse en `R/config.R`.
 
-## Build a data Release
+## Abrir la aplicación
 
 ```r
-raw <- import_article_data("data-raw/input/institutional_articles.csv")
+run_app()
+```
+
+También puede solicitar explícitamente el motor lexical:
+
+```r
+run_app(engine = "lexical")
+```
+
+## Recomendación programática
+
+```r
+results <- recommend_articles(
+  title = "Artificial intelligence literacy and entrepreneurial intention",
+  purpose = "Assess whether AI literacy increases entrepreneurial intention",
+  method = "Survey and structural equation model",
+  data = "Questionnaire applied to university students",
+  context = "University students in Honduras",
+  engine = "lexical",
+  n = 20
+)
+
+results
+```
+
+El resultado contiene el índice general, las cinco puntuaciones dimensionales y una explicación determinística.
+
+## Fórmula lexical
+
+Para cada dimensión se calcula:
+
+```text
+Lexical = 0.45 × TF-IDF + 0.35 × BM25 + 0.20 × ExactMatch
+```
+
+Después, las dimensiones se combinan con los pesos predeterminados:
+
+```r
+c(
+  theme = 0.20,
+  method = 0.22,
+  data = 0.10,
+  context = 0.23,
+  purpose = 0.25
+)
+```
+
+Los pesos se renormalizan automáticamente cuando el usuario deja campos vacíos.
+
+## Filtros
+
+```r
+recommend_articles(
+  title = "Digital taxation and innovation",
+  filters = list(
+    year_min = 2020,
+    year_max = 2026,
+    source_title = "Economics"
+  )
+)
+```
+
+## Construir una Release de datos
+
+```r
+raw <- import_article_data(
+  "data-raw/input/institutional_articles.csv"
+)
 
 processed <- process_scopus(
   raw,
@@ -70,7 +142,7 @@ release <- build_database_release(
 validate_release(release)
 ```
 
-The output directory contains:
+La carpeta generada contiene:
 
 ```text
 university_articles_2026-07.duckdb
@@ -79,8 +151,20 @@ checksums.txt
 release_notes.md
 ```
 
-Upload the first three files as assets of the same GitHub Release. `release_notes.md` can be used as the Release description.
+Los primeros tres archivos se publican como assets de la misma GitHub Release.
 
-## Privacy
+## Actualizar la base local
 
-The application is designed for local processing. No telemetry is implemented and user research descriptions are not sent to an external service.
+```r
+check_database_update()
+update_database()
+database_info()
+```
+
+## Privacidad
+
+El motor lexical funciona completamente en local. La aplicación no implementa telemetría y no envía las descripciones de investigación a servicios externos.
+
+## Uso responsable
+
+Las recomendaciones indican proximidad documental; no sustituyen la revisión académica. Cada artículo debe citarse únicamente cuando contribuya de manera sustantiva a la investigación.

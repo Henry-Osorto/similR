@@ -1,6 +1,24 @@
+
+# similR 0.3.0.9000
+
+## Fase 3
+
+- Added a fully local lexical recommendation engine.
+- Added sparse per-dimension lexical indexes cached in the user directory.
+- Added TF-IDF cosine similarity.
+- Added BM25 ranking with document-length normalization.
+- Added exact matching for methods, countries, populations, databases, and DOI terms.
+- Added automatic normalization of dimension weights when fields are empty.
+- Added `recommend_articles()` as the programmatic recommendation interface.
+- Added year, source, author, DOI, and article identifier filters.
+- Added deterministic recommendation explanations.
+- Replaced the placeholder Shiny screen with a modular recommendation application.
+- Added searchable and sortable results, CSV download, and article detail modals.
+- Added lexical, ranking, query, cache, and Shiny module tests.
+
 # similR 0.2.0.9000
 
-## Phase 2
+## Fase 2
 
 - Renamed the package from `UniLitR` to `similR`.
 - Added generic bibliographic import.

@@ -1,11 +1,58 @@
+
 Package: similR
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Type: Package
+Title: Local Recommendation of Institutional Scientific Literature
+Version: 0.3.0.9000
+Authors@R:
+    person(
+      given = "Henry",
+      family = "Osorto",
+      email = "REPLACE_WITH_VALID_EMAIL@example.org",
+      role = c("aut", "cre")
+    )
+Description: Provides a local Shiny application and reproducible data pipeline
+    for recommending institutional scientific literature. The package imports,
+    cleans, deduplicates, versions, validates, and stores bibliographic records
+    in DuckDB databases distributed through GitHub Releases. The lexical
+    recommendation engine combines TF-IDF, BM25, exact-term matching, and
+    dimension-specific weights. A semantic engine is designed as an optional
+    extension for a subsequent development phase.
+License: MIT + file LICENSE
+URL: https://github.com/REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY
+BugReports: https://github.com/REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 8.0.0
+RoxygenNote: 7.3.2
+Depends:
+    R (>= 4.2.0)
+Imports:
+    bslib (>= 0.7.0),
+    cli,
+    DBI,
+    digest,
+    dplyr,
+    DT (>= 0.30),
+    duckdb,
+    fs,
+    httr2,
+    janitor,
+    jsonlite,
+    Matrix,
+    purrr,
+    readr,
+    rlang,
+    shiny (>= 1.8.0),
+    stringi,
+    stringr,
+    tibble,
+    tidyr
+Suggests:
+    knitr,
+    readxl,
+    rmarkdown,
+    shinytest2,
+    testthat (>= 3.2.0),
+    webfakes,
+    withr
+Config/testthat/edition: 3
+VignetteBuilder: knitr

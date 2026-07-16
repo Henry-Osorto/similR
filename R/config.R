@@ -1,3 +1,4 @@
+
 .similr_package_name <- "similR"
 
 #' Central package configuration
@@ -24,8 +25,9 @@ package_config <- function() {
     schema_version = getOption("similR.schema_version", "1.0"),
     minimum_package_version = getOption(
       "similR.minimum_package_version",
-      "0.2.0"
+      "0.3.0"
     ),
+    lexical_index_version = getOption("similR.lexical_index_version", "1.0"),
     release_scan_limit = as.integer(getOption("similR.release_scan_limit", 30L)),
     dimensions = c("theme", "purpose", "method", "data", "context")
   )
@@ -60,6 +62,6 @@ validate_github_config <- function(config = package_config()) {
 installed_package_version <- function() {
   tryCatch(
     as.character(utils::packageVersion(.similr_package_name)),
-    error = function(e) "0.2.0.9000"
+    error = function(e) "0.3.0.9000"
   )
 }

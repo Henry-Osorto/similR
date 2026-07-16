@@ -1,0 +1,62 @@
+
+---
+title: "Lexical recommendation engine"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Lexical recommendation engine}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Overview
+
+The lexical engine compares five dimensions independently:
+
+1. theme;
+2. purpose;
+3. method;
+4. data;
+5. context.
+
+For article `i` and dimension `k`, the dimension score is:
+
+\[
+L_{ik} = 0.45\,TFIDF_{ik} + 0.35\,BM25_{ik} + 0.20\,ExactMatch_{ik}.
+\]
+
+TF-IDF uses cosine similarity between the normalized query vector and normalized document vectors. BM25 incorporates document frequency and document-length normalization. `ExactMatch` combines predefined multiword concepts with coverage of meaningful query tokens.
+
+## Multidimensional index
+
+The default dimension weights are:
+
+```r
+c(
+  theme = 0.20,
+  method = 0.22,
+  data = 0.10,
+  context = 0.23,
+  purpose = 0.25
+)
+```
+
+When a field is empty, its weight is set to zero and the remaining weights are divided by their sum. The final index is reported on a 0–100 scale.
+
+## Programmatic use
+
+```r
+library(similR)
+
+recommend_articles(
+  title = "AI literacy and entrepreneurial intention",
+  purpose = "Assess entrepreneurial intention",
+  method = "Survey and structural equation model",
+  context = "University students in Honduras",
+  engine = "lexical",
+  n = 20
+)
+```
+
+## Cache behavior
+
+The first recommendation after installing or updating a database constructs the sparse lexical index. Later searches reuse the in-memory index. New R sessions reuse the disk cache when the database has not changed.

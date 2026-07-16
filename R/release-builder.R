@@ -107,6 +107,8 @@ release_metadata <- function(data_version, data, model_name, embedding_info, com
     query_prefix = "query: ",
     passage_prefix = "passage: ",
     minimum_package_version = package_config()$minimum_package_version,
+    lexical_index_version = package_config()$lexical_index_version,
+    lexical_components = "tfidf:0.45,bm25:0.35,exact:0.20",
     articles_new = comparison$summary$new,
     articles_modified = comparison$summary$modified,
     articles_unchanged = comparison$summary$unchanged,
@@ -134,6 +136,8 @@ write_release_notes <- function(path, data_version, comparison, embedding_info) 
     paste0("- Embeddings generados o incorporados: ", embedding_info$regenerated %||% 0L),
     paste0("- Embeddings totales en la base: ", embedding_info$actual),
     paste0("- Estado de embeddings: ", embedding_info$status),
+    paste0("- Versión del índice lexical: ", package_config()$lexical_index_version),
+    "- Motor lexical: 0.45 TF-IDF + 0.35 BM25 + 0.20 coincidencias exactas",
     "",
     "La base fue generada por similR y debe publicarse junto con manifest.json y checksums.txt."
   )
@@ -149,7 +153,7 @@ write_release_notes <- function(path, data_version, comparison, embedding_info) 
 #' @param model_name Embedding model identifier recorded in metadata.
 #' @param output_dir Directory where the release files will be written.
 #' @param embeddings Optional data frame with `article_id`, `dimension`, and a
-#'   list-column named `embedding`. Phase 2 permits a release without embeddings.
+#'   list-column named `embedding`. A valid lexical Release may be built without embeddings.
 #' @param overwrite Whether an existing release directory may be replaced.
 #'
 #' @return An object of class `similR_release`.
@@ -232,6 +236,8 @@ build_database_release <- function(
     query_prefix = "query: ",
     passage_prefix = "passage: ",
     minimum_package_version = package_config()$minimum_package_version,
+    lexical_index_version = package_config()$lexical_index_version,
+    lexical_components = "tfidf:0.45,bm25:0.35,exact:0.20",
     sha256 = hash
   )
   jsonlite::write_json(manifest, manifest_path, pretty = TRUE, auto_unbox = TRUE, na = "null")

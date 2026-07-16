@@ -11,13 +11,13 @@ run_app(
 )
 }
 \arguments{
-\item{engine}{Recommendation engine. In Phase 2, \code{"auto"} resolves to \code{"lexical"}.}
+\item{engine}{Recommendation engine. In Phase 3, \code{"auto"} resolves to the local lexical engine; the semantic engine is reserved for Phase 4.}
 \item{check_updates}{Check GitHub Releases before opening the app.}
 \item{launch.browser}{Value passed to \code{shiny::runApp()}.}
 \item{host}{Local host passed to \code{shiny::runApp()}.}
 \item{port}{Optional local port.}
 }
-\description{Ensures a verified local database is present and opens the packaged Shiny application.}
+\description{Ensures a verified local database is present and opens the modular Shiny recommendation application.}
 \examples{
 \dontrun{run_app(engine = "lexical")}
 }

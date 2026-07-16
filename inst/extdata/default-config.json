@@ -6,5 +6,19 @@
   "manifest_asset": "manifest.json",
   "checksum_asset": "checksums.txt",
   "default_model": "intfloat/multilingual-e5-base",
-  "schema_version": "1.0"
+  "schema_version": "1.0",
+  "minimum_package_version": "0.3.0",
+  "lexical_index_version": "1.0",
+  "lexical_components": {
+    "tfidf": 0.45,
+    "bm25": 0.35,
+    "exact": 0.2
+  },
+  "default_weights": {
+    "theme": 0.2,
+    "method": 0.22,
+    "data": 0.1,
+    "context": 0.23,
+    "purpose": 0.25
+  }
 }

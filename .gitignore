@@ -6,6 +6,3 @@
 release/
 data-raw/input/*
 !data-raw/input/.gitkeep
-.httr-oauth
-.DS_Store
-.quarto

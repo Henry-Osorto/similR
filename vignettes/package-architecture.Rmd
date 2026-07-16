@@ -1,3 +1,4 @@
+
 ---
 title: "Package architecture"
 output: rmarkdown::html_vignette
@@ -7,6 +8,26 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-`similR` separates package code from the institutional database. Package versions follow semantic versioning; data versions use `YYYY.MM`.
+`similR` separates package code from the institutional bibliographic database. Package versions follow semantic versioning and data versions use `YYYY.MM`.
 
-Phase 2 prepares the four DuckDB tables `articles`, `embeddings`, `lexical_documents`, and `database_metadata`. Phase 3 will implement the lexical ranker, and Phase 4 will implement the local Python semantic engine.
+The DuckDB release contains four tables:
+
+- `articles`;
+- `embeddings`;
+- `lexical_documents`;
+- `database_metadata`.
+
+The Phase 3 lexical index is reconstructed from `lexical_documents` only when needed. It is then cached as an RDS object under `tools::R_user_dir("similR", "cache")`. The cache key incorporates the database path, file size, modification time, and lexical-index schema version.
+
+For each of the five dimensions, the cached object stores:
+
+- a stable article ordering;
+- vocabulary;
+- sparse term-frequency matrix;
+- normalized TF-IDF matrix;
+- TF-IDF inverse-document frequencies;
+- BM25 inverse-document frequencies;
+- document lengths;
+- exact terms.
+
+The query is processed locally and compared with each dimension. Phase 4 will add an optional local semantic engine while preserving the same `recommend_articles()` interface.

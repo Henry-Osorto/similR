@@ -59,3 +59,22 @@ create_test_database <- function(path, n = 2L) {
   file.copy(release$database_path, path, overwrite = TRUE)
   invisible(path)
 }
+
+install_test_release <- function(release, data_dir) {
+  dir.create(data_dir, recursive = TRUE, showWarnings = FALSE)
+  file.copy(
+    release$database_path,
+    file.path(data_dir, basename(release$database_path)),
+    overwrite = TRUE
+  )
+  manifest <- release$manifest
+  manifest$installed_at <- "2026-07-15T12:00:00Z"
+  jsonlite::write_json(
+    manifest,
+    file.path(data_dir, "manifest.json"),
+    auto_unbox = TRUE,
+    pretty = TRUE
+  )
+  invisible(data_dir)
+}
+
