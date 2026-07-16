@@ -1,0 +1,97 @@
+
+:root {
+  --similr-soft-bg: #f5f7fa;
+  --similr-border: #dce3ea;
+}
+
+body {
+  background: var(--similr-soft-bg);
+}
+
+.app-container {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 1.2rem 1.4rem 2rem;
+}
+
+.app-introduction {
+  margin-bottom: 1rem;
+}
+
+.app-introduction h1 {
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.app-introduction p {
+  color: #52616f;
+  max-width: 960px;
+  font-size: 1.05rem;
+}
+
+.query-card textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.search-action {
+  display: flex;
+  justify-content: stretch;
+  margin-top: 0.7rem;
+}
+
+.search-action .btn {
+  width: 100%;
+}
+
+.form-hint {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.advanced-button {
+  margin-top: 1.85rem;
+  width: 100%;
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.result-summary,
+.empty-results {
+  padding: 0.7rem 0.25rem 1rem;
+  color: #52616f;
+}
+
+.responsible-use-card {
+  margin-top: 1rem;
+}
+
+.responsible-use-card blockquote {
+  border-left: 4px solid #2c7be5;
+  padding-left: 1rem;
+  color: #394956;
+}
+
+.about-page {
+  max-width: 980px;
+}
+
+.dt-center {
+  text-align: center;
+}
+
+.value-box {
+  min-height: 145px;
+}
+
+@media (max-width: 900px) {
+  .app-container {
+    padding: 0.8rem;
+  }
+}

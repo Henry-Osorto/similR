@@ -1,77 +1,130 @@
-`%||%` <- function(x, y) if (is.null(x) || length(x) == 0L) y else x
 
-runtime <- getOption(
-  "similR.runtime",
-  list(engine = "lexical", update_status = list(update_available = FALSE, error = NULL), package_version = NA_character_)
-)
+source("global.R", local = TRUE)
 
-ui <- bslib::page_fillable(
+ui <- bslib::page_navbar(
   title = "similR",
+  id = "main_navigation",
   theme = bslib::bs_theme(version = 5, bootswatch = "flatly"),
-  bslib::layout_column_wrap(
-    width = 1,
-    bslib::card(
-      bslib::card_header("similR — Fase 2"),
-      shiny::h2("Base bibliográfica institucional"),
-      shiny::p("Esta fase incorpora importación, limpieza, deduplicación, extracción de dimensiones y construcción reproducible de Releases DuckDB."),
-      shiny::uiOutput("database_summary"),
-      shiny::hr(),
-      shiny::p(shiny::strong("Motor seleccionado: "), runtime$engine),
-      shiny::p("El ranking lexical se incorporará en la Fase 3 y el motor semántico en la Fase 4.")
-    ),
-    bslib::card(
-      bslib::card_header("Principio de uso responsable"),
-      shiny::tags$blockquote("Las recomendaciones se basan en similitud temática, metodológica y contextual. El investigador debe revisar cada artículo y citarlo únicamente cuando contribuya de manera sustantiva a su investigación.")
+  header = shiny::tagList(
+    shiny::tags$head(
+      shiny::tags$link(rel = "stylesheet", type = "text/css", href = "custom.css"),
+      shiny::tags$script(shiny::HTML(paste0(
+        "Shiny.addCustomMessageHandler('similR-toggle-button', function(x) {",
+        "var button = document.getElementById(x.id);",
+        "if (!button) return;",
+        "button.disabled = x.disabled;",
+        "button.innerText = x.label;",
+        "});"
+      )))
+    )
+  ),
+  bslib::nav_panel(
+    "Recomendar artículos",
+    shiny::div(
+      class = "app-container",
+      shiny::div(
+        class = "app-introduction",
+        shiny::h1("Descubra literatura institucional relacionada"),
+        shiny::p(
+          "Describa su investigación y similR identificará los artículos con mayor proximidad temática, metodológica, contextual, de datos y de propósito."
+        )
+      ),
+      bslib::layout_column_wrap(
+        width = 1 / 2,
+        mod_database_status_ui("database_status"),
+        mod_engine_status_ui("engine_status")
+      ),
+      bslib::layout_sidebar(
+        sidebar = bslib::sidebar(
+          width = 430,
+          mod_query_form_ui("query", default_engine = runtime$engine),
+          open = "always"
+        ),
+        mod_results_table_ui("results")
+      ),
+      bslib::card(
+        class = "responsible-use-card",
+        bslib::card_header("Uso responsable"),
+        shiny::tags$blockquote(
+          "Las recomendaciones se basan en similitud temática, metodológica y contextual. El investigador debe revisar cada artículo y citarlo únicamente cuando contribuya de manera sustantiva a su investigación."
+        ),
+        shiny::tags$p(
+          shiny::strong("Privacidad: "),
+          "los textos introducidos se procesan localmente en la computadora del usuario y no se transmiten a servicios externos."
+        )
+      )
+    )
+  ),
+  bslib::nav_panel(
+    "Acerca de",
+    shiny::div(
+      class = "app-container about-page",
+      shiny::h2("Acerca de similR"),
+      shiny::p(
+        "similR es una aplicación local para descubrir literatura científica institucional potencialmente relacionada con una nueva investigación."
+      ),
+      shiny::h4("Motor lexical de la Fase 3"),
+      shiny::p(
+        "El índice combina similitud TF-IDF, BM25 y coincidencias exactas de términos técnicos y contextuales. Las cinco dimensiones se ponderan de manera independiente."
+      ),
+      shiny::h4("Versión del paquete"),
+      shiny::p(runtime$package_version %||% "No disponible")
     )
   )
 )
 
 server <- function(input, output, session) {
   info <- shiny::reactiveVal(similR::database_info())
-  output$database_summary <- shiny::renderUI({
-    current <- info()
-    if (!isTRUE(current$installed)) return(shiny::div(class = "alert alert-danger", "Base no instalada."))
-    shiny::tagList(
-      shiny::p(shiny::strong("Versión: "), current$version),
-      shiny::p(shiny::strong("Artículos: "), format(current$number_of_articles, big.mark = ",")),
-      shiny::p(shiny::strong("Archivo: "), current$file_name),
-      shiny::p(shiny::strong("Tamaño: "), current$size),
-      shiny::p(shiny::strong("Esquema: "), current$database_schema_version)
-    )
-  })
-  shiny::observeEvent(TRUE, {
-    status <- runtime$update_status
-    if (isTRUE(status$update_available)) {
-      manifest <- status$manifest
-      shiny::showModal(shiny::modalDialog(
-        title = "Se encontró una nueva base bibliográfica",
-        shiny::p(shiny::strong("Versión instalada: "), if (is.null(status$installed_version) || is.na(status$installed_version)) "No instalada" else status$installed_version),
-        shiny::p(shiny::strong("Versión disponible: "), status$available_version),
-        shiny::p(shiny::strong("Artículos en la nueva base: "), format(manifest$number_of_articles, big.mark = ",")),
-        shiny::p(shiny::strong("Fecha de publicación: "), manifest$published_at),
-        footer = shiny::tagList(shiny::modalButton("Continuar con versión instalada"), shiny::actionButton("update_now", "Actualizar ahora", class = "btn-primary")),
-        easyClose = FALSE
-      ))
-    } else if (!is.null(status$error) && nzchar(status$error)) {
-      shiny::showNotification(paste("No fue posible comprobar actualizaciones:", status$error), type = "warning", duration = 8)
-    }
-  }, once = TRUE)
-  shiny::observeEvent(input$update_now, {
-    shiny::withProgress(message = "Actualizando la base", value = 0, {
-      result <- tryCatch({
-        shiny::incProgress(0.2, detail = "Descargando y verificando")
-        similR::update_database(force = TRUE, quiet = TRUE)
+  engine <- shiny::reactiveVal(runtime$engine)
+  results <- shiny::reactiveVal(NULL)
+
+  mod_database_status_server("database_status", info)
+  mod_engine_status_server("engine_status", engine)
+  mod_update_database_server("database_update", runtime$update_status, info)
+
+  query_module <- mod_query_form_server("query")
+
+  shiny::observeEvent(query_module$query(), {
+    request <- query_module$query()
+    query_module$set_busy(TRUE)
+    on.exit(query_module$set_busy(FALSE), add = TRUE)
+
+    result <- shiny::withProgress(message = "Comparando la investigación", value = 0, {
+      shiny::incProgress(0.15, detail = "Preparando el índice lexical")
+      tryCatch({
+        recommendations <- similR::recommend_articles(
+          title = request$title,
+          purpose = request$purpose,
+          method = request$method,
+          data = request$data,
+          context = request$context,
+          engine = request$engine,
+          n = request$n,
+          weights = request$weights,
+          filters = request$filters
+        )
+        shiny::incProgress(0.85, detail = "Ordenando recomendaciones")
+        recommendations
       }, error = function(e) e)
-      if (inherits(result, "error")) {
-        shiny::showNotification(conditionMessage(result), type = "error", duration = NULL)
-      } else {
-        shiny::incProgress(0.8, detail = "Actualización completada")
-        info(similR::database_info())
-        shiny::removeModal()
-        shiny::showNotification("La base bibliográfica fue actualizada.", type = "message")
-      }
     })
-  })
+
+    if (inherits(result, "error")) {
+      shiny::showNotification(conditionMessage(result), type = "error", duration = NULL)
+    } else {
+      results(result)
+      selected_engine <- if (nrow(result) > 0L) {
+        result$engine[[1L]]
+      } else if (identical(request$engine, "auto")) {
+        "lexical"
+      } else {
+        request$engine
+      }
+      engine(selected_engine)
+    }
+  }, ignoreInit = TRUE)
+
+  selected <- mod_results_table_server("results", results)
+  mod_article_details_server("article_details", selected)
 }
 
 shiny::shinyApp(ui, server)
