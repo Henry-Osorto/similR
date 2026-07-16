@@ -1,0 +1,12 @@
+---
+title: "Package architecture"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Package architecture}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+`similR` separates package code from the institutional database. Package versions follow semantic versioning; data versions use `YYYY.MM`.
+
+Phase 2 prepares the four DuckDB tables `articles`, `embeddings`, `lexical_documents`, and `database_metadata`. Phase 3 will implement the lexical ranker, and Phase 4 will implement the local Python semantic engine.

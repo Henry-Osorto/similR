@@ -1,0 +1,11 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Renviron
+release/
+data-raw/input/*
+!data-raw/input/.gitkeep
+.httr-oauth
+.DS_Store
+.quarto

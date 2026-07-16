@@ -1,0 +1,6 @@
+^similR\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^data-raw$
+^release$
+^PHASE[0-9]+_.*$

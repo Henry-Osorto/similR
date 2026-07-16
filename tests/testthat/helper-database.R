@@ -1,0 +1,61 @@
+create_test_articles <- function() {
+  raw <- tibble::tibble(
+    Title = c(
+      "Artificial intelligence literacy and entrepreneurial intention",
+      "Digital taxation and firm innovation"
+    ),
+    Authors = c("Ana Pérez; Juan López", "María Díaz"),
+    Abstract = c(
+      "This study aims to assess entrepreneurial intention among university students. A survey and structural equation model are used in Honduras.",
+      "We examine digital tax filing and product innovation using enterprise survey data from emerging markets."
+    ),
+    Keywords = c("artificial intelligence; entrepreneurship", "taxation; innovation"),
+    DOI = c("https://doi.org/10.1000/ABC.1", "10.1000/abc.2"),
+    Year = c(2026L, 2025L),
+    Source = c("Journal A", "Journal B")
+  )
+  process_scopus(
+    raw,
+    column_map = c(
+      title = "Title", authors = "Authors", abstract = "Abstract",
+      author_keywords = "Keywords", doi = "DOI", year = "Year",
+      source_title = "Source"
+    ),
+    source = "generic"
+  ) |>
+    build_dimension_texts()
+}
+
+create_test_manifest <- function(database_file, sha256, n = 1, embedding_status = "absent") {
+  list(
+    data_version = "2026.07",
+    published_at = "2026-07-15",
+    database_file = database_file,
+    database_schema_version = "1.0",
+    number_of_articles = n,
+    embedding_model = "intfloat/multilingual-e5-base",
+    embedding_status = embedding_status,
+    embedding_dimensions = if (embedding_status == "absent") 0L else 768L,
+    embedding_normalized = embedding_status != "absent",
+    query_prefix = "query: ",
+    passage_prefix = "passage: ",
+    minimum_package_version = "0.2.0",
+    sha256 = sha256
+  )
+}
+
+create_test_database <- function(path, n = 2L) {
+  articles <- create_test_articles()
+  if (n < nrow(articles)) articles <- articles[seq_len(n), , drop = FALSE]
+  if (n == 0L) articles <- articles[0, , drop = FALSE]
+  directory <- tempfile("release-")
+  dir.create(directory)
+  release <- build_database_release(
+    data = articles,
+    data_version = "2026.07",
+    output_dir = directory,
+    overwrite = TRUE
+  )
+  file.copy(release$database_path, path, overwrite = TRUE)
+  invisible(path)
+}

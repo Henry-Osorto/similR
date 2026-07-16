@@ -1,0 +1,10 @@
+{
+  "package_name": "similR",
+  "github_owner": "REPLACE_GITHUB_OWNER",
+  "github_repo": "REPLACE_GITHUB_REPOSITORY",
+  "database_asset_pattern": "^university_articles_[0-9]{4}-[0-9]{2}\\.duckdb$",
+  "manifest_asset": "manifest.json",
+  "checksum_asset": "checksums.txt",
+  "default_model": "intfloat/multilingual-e5-base",
+  "schema_version": "1.0"
+}

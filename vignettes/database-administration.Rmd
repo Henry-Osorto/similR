@@ -1,0 +1,41 @@
+---
+title: "Database administration"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Database administration}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, eval=FALSE}
+library(similR)
+
+raw <- import_article_data("data-raw/input/institutional_articles.csv")
+
+processed <- process_scopus(
+  raw,
+  column_map = c(
+    title = "Title",
+    authors = "Authors",
+    abstract = "Abstract",
+    author_keywords = "Keywords",
+    doi = "DOI",
+    year = "Year",
+    source_title = "Source"
+  ),
+  source = "generic"
+)
+
+processed <- build_dimension_texts(processed)
+
+release <- build_database_release(
+  data = processed,
+  previous_database = NULL,
+  data_version = "2026.07",
+  output_dir = "release/2026.07"
+)
+
+validate_release(release)
+```
+
+The generated database can be uploaded to GitHub Releases together with `manifest.json` and `checksums.txt`.
