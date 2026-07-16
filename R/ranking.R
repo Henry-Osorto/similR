@@ -157,17 +157,7 @@ rank_articles_lexical <- function(
     ) |>
     dplyr::slice_head(n = n)
 
-  if (nrow(result) == 0L) {
-    return(tibble::tibble(
-      rank = integer(), index = numeric(), similarity_theme = numeric(),
-      similarity_method = numeric(), similarity_data = numeric(),
-      similarity_context = numeric(), similarity_purpose = numeric(),
-      title = character(), authors = character(), year = integer(),
-      doi = character(), keywords = character(), source_title = character(),
-      abstract = character(), article_id = character(), explanation = character(),
-      engine = character()
-    ))
-  }
+  if (nrow(result) == 0L) return(empty_recommendation_table())
 
   result$rank <- seq_len(nrow(result))
   result$explanation <- vapply(seq_len(nrow(result)), function(i) {

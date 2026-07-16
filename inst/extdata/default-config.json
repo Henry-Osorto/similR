@@ -7,8 +7,16 @@
   "checksum_asset": "checksums.txt",
   "default_model": "intfloat/multilingual-e5-base",
   "schema_version": "1.0",
-  "minimum_package_version": "0.3.0",
+  "minimum_package_version": "0.4.0",
   "lexical_index_version": "1.0",
+  "semantic_index_version": "1.0",
+  "query_prefix": "query: ",
+  "passage_prefix": "passage: ",
+  "python_version": ">=3.10",
+  "python_packages": [
+    "sentence-transformers>=3.0",
+    "numpy>=1.24"
+  ],
   "lexical_components": {
     "tfidf": 0.45,
     "bm25": 0.35,

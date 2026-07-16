@@ -63,9 +63,9 @@ ui <- bslib::page_navbar(
       shiny::p(
         "similR es una aplicación local para descubrir literatura científica institucional potencialmente relacionada con una nueva investigación."
       ),
-      shiny::h4("Motor lexical de la Fase 3"),
+      shiny::h4("Motores de recomendación"),
       shiny::p(
-        "El índice combina similitud TF-IDF, BM25 y coincidencias exactas de términos técnicos y contextuales. Las cinco dimensiones se ponderan de manera independiente."
+        "El motor lexical combina TF-IDF, BM25 y coincidencias exactas. El motor semántico utiliza embeddings multilingües generados con Sentence Transformers. En modo automático, similR utiliza el motor semántico únicamente cuando el entorno local y la base son compatibles."
       ),
       shiny::h4("Versión del paquete"),
       shiny::p(runtime$package_version %||% "No disponible")
@@ -90,7 +90,7 @@ server <- function(input, output, session) {
     on.exit(query_module$set_busy(FALSE), add = TRUE)
 
     result <- shiny::withProgress(message = "Comparando la investigación", value = 0, {
-      shiny::incProgress(0.15, detail = "Preparando el índice lexical")
+      shiny::incProgress(0.15, detail = "Preparando el motor de recomendación")
       tryCatch({
         recommendations <- similR::recommend_articles(
           title = request$title,
@@ -115,7 +115,7 @@ server <- function(input, output, session) {
       selected_engine <- if (nrow(result) > 0L) {
         result$engine[[1L]]
       } else if (identical(request$engine, "auto")) {
-        "lexical"
+        runtime$engine
       } else {
         request$engine
       }

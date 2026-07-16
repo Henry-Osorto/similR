@@ -11,13 +11,21 @@ run_app(
 )
 }
 \arguments{
-\item{engine}{Recommendation engine. In Phase 3, \code{"auto"} resolves to the local lexical engine; the semantic engine is reserved for Phase 4.}
+\item{engine}{Recommendation engine. Automatic mode selects semantic retrieval
+only when all local semantic components are ready; otherwise it uses lexical
+retrieval.}
 \item{check_updates}{Check GitHub Releases before opening the app.}
 \item{launch.browser}{Value passed to \code{shiny::runApp()}.}
 \item{host}{Local host passed to \code{shiny::runApp()}.}
 \item{port}{Optional local port.}
 }
-\description{Ensures a verified local database is present and opens the modular Shiny recommendation application.}
+\value{The value returned by \code{shiny::runApp()}, invisibly.}
+\description{
+Ensures a verified local database is present, resolves the requested engine,
+and opens the modular Shiny recommendation application.
+}
 \examples{
-\dontrun{run_app(engine = "lexical")}
+\dontrun{
+run_app(engine = "auto")
+}
 }

@@ -27,7 +27,13 @@ processed <- process_scopus(
 )
 
 processed <- build_dimension_texts(processed)
+```
 
+## Lexical-only Release
+
+A lexical Release does not require Python:
+
+```{r, eval=FALSE}
 release <- build_database_release(
   data = processed,
   previous_database = NULL,
@@ -38,4 +44,45 @@ release <- build_database_release(
 validate_release(release)
 ```
 
-The generated database can be uploaded to GitHub Releases together with `manifest.json` and `checksums.txt`.
+## Release with semantic embeddings
+
+Prepare the local Python dependencies and download the model once:
+
+```{r, eval=FALSE}
+install_semantic_engine()
+download_embedding_model()
+```
+
+Then generate a complete semantic Release:
+
+```{r, eval=FALSE}
+release <- build_database_release(
+  data = processed,
+  previous_database = "release/2026.06/university_articles_2026-06.duckdb",
+  data_version = "2026.07",
+  model_name = "intfloat/multilingual-e5-base",
+  output_dir = "release/2026.07",
+  generate_embeddings = TRUE,
+  batch_size = 32L,
+  overwrite = TRUE
+)
+
+validate_release(release)
+```
+
+When the previous database is compatible, unchanged article embeddings are
+reused. Only new and modified articles are encoded.
+
+## Files to publish
+
+The output directory contains:
+
+```text
+university_articles_2026-07.duckdb
+manifest.json
+checksums.txt
+release_notes.md
+```
+
+Upload the first three files as assets of the same GitHub Release. The contents
+of `release_notes.md` can be used as the Release description.

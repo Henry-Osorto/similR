@@ -1,4 +1,3 @@
-
 ---
 title: "Package architecture"
 output: rmarkdown::html_vignette
@@ -8,7 +7,28 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-`similR` separates package code from the institutional bibliographic database. Package versions follow semantic versioning and data versions use `YYYY.MM`.
+`similR` separates package code, the institutional bibliographic database, and
+the optional local embedding model. Package versions follow semantic versioning
+and data versions use `YYYY.MM`.
+
+## Installed components
+
+```text
+GitHub repository
+├── R package code
+└── Shiny application
+
+GitHub Release
+├── university_articles_YYYY-MM.duckdb
+├── manifest.json
+└── checksums.txt
+
+User computer
+├── installed R package
+├── verified local DuckDB database
+├── cached lexical index
+└── optional Sentence Transformer model
+```
 
 The DuckDB release contains four tables:
 
@@ -17,17 +37,50 @@ The DuckDB release contains four tables:
 - `lexical_documents`;
 - `database_metadata`.
 
-The Phase 3 lexical index is reconstructed from `lexical_documents` only when needed. It is then cached as an RDS object under `tools::R_user_dir("similR", "cache")`. The cache key incorporates the database path, file size, modification time, and lexical-index schema version.
+## Lexical engine
 
-For each of the five dimensions, the cached object stores:
+The lexical index is reconstructed from `lexical_documents` only when needed
+and then cached as an RDS object under `tools::R_user_dir("similR", "cache")`.
+The cache key incorporates the database path, file size, modification time, data
+version, and lexical-index schema version.
 
-- a stable article ordering;
-- vocabulary;
-- sparse term-frequency matrix;
-- normalized TF-IDF matrix;
-- TF-IDF inverse-document frequencies;
-- BM25 inverse-document frequencies;
-- document lengths;
-- exact terms.
+For each dimension, the cached object stores a stable article ordering,
+vocabulary, sparse term-frequency matrix, normalized TF-IDF matrix, BM25
+statistics, document lengths, and exact technical or contextual terms.
 
-The query is processed locally and compared with each dimension. Phase 4 will add an optional local semantic engine while preserving the same `recommend_articles()` interface.
+## Semantic engine
+
+The optional semantic engine is invoked through `reticulate`. The R package
+declares Python requirements during `.onLoad()`, but delayed module loading
+allows `library(similR)` to succeed without initializing Python.
+
+The embedding model is downloaded only by an explicit call to
+`download_embedding_model()`. It is stored in the similR user cache and loaded
+with `local_files_only = TRUE` for subsequent queries.
+
+Each article has one normalized embedding for each dimension:
+
+- theme;
+- purpose;
+- method;
+- data;
+- context.
+
+The same model and configuration produce query embeddings. The ranking uses the
+dot product of normalized vectors, which equals cosine similarity, transforms
+the result to a zero-to-one scale, and combines the five dimensions with
+renormalized weights.
+
+## Automatic engine selection
+
+`engine = "auto"` selects semantic retrieval only when all of the following are
+true:
+
+1. a compatible Python runtime is available;
+2. `sentence-transformers` and NumPy are available;
+3. the model declared by the database is downloaded locally;
+4. the database contains complete, normalized embeddings generated with the
+   same model, prefixes, and dimensions.
+
+Otherwise, similR uses the lexical engine without preventing access to the
+application.

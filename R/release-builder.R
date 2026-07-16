@@ -17,7 +17,9 @@ prepare_articles_for_release <- function(data) {
   required <- article_release_columns()
   missing <- setdiff(required, names(data))
   if (length(missing) > 0L) {
-    rlang::abort(paste("Faltan columnas para construir la base:", paste(missing, collapse = ", ")))
+    rlang::abort(
+      paste("Faltan columnas para construir la base:", paste(missing, collapse = ", "))
+    )
   }
   data |>
     dplyr::select(dplyr::all_of(required)) |>
@@ -53,15 +55,18 @@ create_database_tables <- function(connection) {
     "tokens_json VARCHAR, document_length INTEGER, exact_terms VARCHAR,",
     "content_hash VARCHAR)"
   ))
-  DBI::dbExecute(connection, "CREATE TABLE database_metadata (key VARCHAR PRIMARY KEY, value VARCHAR)")
+  DBI::dbExecute(
+    connection,
+    "CREATE TABLE database_metadata (key VARCHAR PRIMARY KEY, value VARCHAR)"
+  )
 }
 
 write_database_indexes <- function(connection) {
   statements <- c(
     "CREATE INDEX idx_articles_doi ON articles(doi_normalized)",
     "CREATE INDEX idx_articles_year ON articles(year)",
-    "CREATE INDEX idx_embeddings_article_dimension ON embeddings(article_id, dimension)",
-    "CREATE INDEX idx_lexical_article_dimension ON lexical_documents(article_id, dimension)"
+    "CREATE UNIQUE INDEX idx_embeddings_article_dimension ON embeddings(article_id, dimension)",
+    "CREATE UNIQUE INDEX idx_lexical_article_dimension ON lexical_documents(article_id, dimension)"
   )
   for (statement in statements) DBI::dbExecute(connection, statement)
   invisible(TRUE)
@@ -70,16 +75,35 @@ write_database_indexes <- function(connection) {
 embedding_release_status <- function(embeddings, number_of_articles) {
   expected <- number_of_articles * length(package_config()$dimensions)
   actual <- nrow(embeddings)
-  status <- if (actual == 0L) "absent" else if (actual == expected) "complete" else "partial"
-  dimensions <- if (actual == 0L) integer() else unique(as.integer(embeddings$embedding_dimensions))
-  if (length(dimensions) > 1L) rlang::abort("La tabla de embeddings contiene dimensiones incompatibles.")
-  dimension_value <- if (length(dimensions) == 0L) 0L else dimensions[[1L]]
+  status <- if (actual == 0L) {
+    "absent"
+  } else if (actual == expected) {
+    "complete"
+  } else {
+    "partial"
+  }
+  vector_dimensions <- if (actual == 0L) {
+    integer()
+  } else {
+    unique(as.integer(embeddings$embedding_dimensions))
+  }
+  if (length(vector_dimensions) > 1L) {
+    rlang::abort("La tabla de embeddings contiene dimensiones incompatibles.")
+  }
+  dimension_value <- if (length(vector_dimensions) == 0L) 0L else vector_dimensions[[1L]]
   normalized <- if (actual == 0L) FALSE else all(embeddings$normalized)
-  list(status = status, expected = expected, actual = actual, dimensions = dimension_value, normalized = normalized)
+  list(
+    status = status,
+    expected = expected,
+    actual = actual,
+    dimensions = dimension_value,
+    normalized = normalized
+  )
 }
 
 reuse_previous_embeddings <- function(previous_database, comparison, model_name) {
-  if (!is.character(previous_database) || length(previous_database) != 1L) {
+  if (!is.character(previous_database) || length(previous_database) != 1L ||
+      !previous_embeddings_reusable(previous_database, model_name)) {
     return(empty_embeddings_table())
   }
   previous <- load_previous_embeddings(previous_database)
@@ -104,8 +128,9 @@ release_metadata <- function(data_version, data, model_name, embedding_info, com
     embedding_status = embedding_info$status,
     embedding_dimensions = embedding_info$dimensions,
     embedding_normalized = embedding_info$normalized,
-    query_prefix = "query: ",
-    passage_prefix = "passage: ",
+    query_prefix = package_config()$query_prefix,
+    passage_prefix = package_config()$passage_prefix,
+    semantic_index_version = package_config()$semantic_index_version,
     minimum_package_version = package_config()$minimum_package_version,
     lexical_index_version = package_config()$lexical_index_version,
     lexical_components = "tfidf:0.45,bm25:0.35,exact:0.20",
@@ -120,7 +145,12 @@ release_metadata <- function(data_version, data, model_name, embedding_info, com
   )
 }
 
-write_release_notes <- function(path, data_version, comparison, embedding_info) {
+write_release_notes <- function(
+    path,
+    data_version,
+    comparison,
+    embedding_info,
+    model_name) {
   lines <- c(
     paste0("# Base bibliográfica ", data_version),
     "",
@@ -137,7 +167,12 @@ write_release_notes <- function(path, data_version, comparison, embedding_info) 
     paste0("- Embeddings totales en la base: ", embedding_info$actual),
     paste0("- Estado de embeddings: ", embedding_info$status),
     paste0("- Versión del índice lexical: ", package_config()$lexical_index_version),
+    paste0("- Versión del índice semántico: ", package_config()$semantic_index_version),
     "- Motor lexical: 0.45 TF-IDF + 0.35 BM25 + 0.20 coincidencias exactas",
+    paste0(
+      "- Modelo semántico: ",
+      if (embedding_info$actual > 0L) model_name else "no incluido"
+    ),
     "",
     "La base fue generada por similR y debe publicarse junto con manifest.json y checksums.txt."
   )
@@ -154,6 +189,9 @@ write_release_notes <- function(path, data_version, comparison, embedding_info) 
 #' @param output_dir Directory where the release files will be written.
 #' @param embeddings Optional data frame with `article_id`, `dimension`, and a
 #'   list-column named `embedding`. A valid lexical Release may be built without embeddings.
+#' @param generate_embeddings Generate new or modified embeddings locally when
+#'   `embeddings` is `NULL`.
+#' @param batch_size Encoding batch size used when `generate_embeddings = TRUE`.
 #' @param overwrite Whether an existing release directory may be replaced.
 #'
 #' @return An object of class `similR_release`.
@@ -165,11 +203,24 @@ build_database_release <- function(
     model_name = package_config()$default_model,
     output_dir,
     embeddings = NULL,
+    generate_embeddings = FALSE,
+    batch_size = 32L,
     overwrite = FALSE) {
   ensure_data_frame(data)
   ensure_scalar_character(data_version, "data_version")
   ensure_scalar_character(model_name, "model_name")
   ensure_scalar_character(output_dir, "output_dir")
+  if (!is.logical(generate_embeddings) || length(generate_embeddings) != 1L ||
+      is.na(generate_embeddings)) {
+    rlang::abort("`generate_embeddings` debe ser TRUE o FALSE.")
+  }
+  if (!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) {
+    rlang::abort("`overwrite` debe ser TRUE o FALSE.")
+  }
+  batch_size <- as.integer(batch_size)
+  if (length(batch_size) != 1L || is.na(batch_size) || batch_size < 1L) {
+    rlang::abort("`batch_size` debe ser un entero positivo.")
+  }
   if (!grepl("^[0-9]{4}\\.[0-9]{2}$", data_version)) {
     rlang::abort("`data_version` debe usar el formato YYYY.MM.")
   }
@@ -188,16 +239,32 @@ build_database_release <- function(
   articles <- merge_previous_timestamps(articles, previous_database, comparison)
   lexical_documents <- build_lexical_documents(articles)
 
+  if (isTRUE(generate_embeddings) && !is.null(embeddings)) {
+    rlang::abort("Use `embeddings` o `generate_embeddings = TRUE`, pero no ambos.")
+  }
+  if (isTRUE(generate_embeddings)) {
+    embeddings <- generate_article_embeddings(
+      data = articles,
+      previous_database = previous_database,
+      model_name = model_name,
+      batch_size = batch_size
+    )
+  }
+
   reusable <- reuse_previous_embeddings(previous_database, comparison, model_name)
   supplied <- standardize_embeddings_input(embeddings, articles, model_name)
-  embedding_table <- dplyr::bind_rows(reusable, supplied) |>
+  embedding_table <- dplyr::bind_rows(supplied, reusable) |>
     dplyr::filter(.data$article_id %in% articles$article_id) |>
-    dplyr::distinct(.data$article_id, .data$dimension, .keep_all = TRUE)
+    dplyr::distinct(.data$article_id, .data$dimension, .keep_all = TRUE) |>
+    dplyr::arrange(.data$article_id, .data$dimension)
   embedding_info <- embedding_release_status(embedding_table, nrow(articles))
   embedding_info$reused <- nrow(reusable)
   embedding_info$regenerated <- nrow(supplied)
 
-  database_file <- sprintf("university_articles_%s.duckdb", gsub("\\.", "-", data_version))
+  database_file <- sprintf(
+    "university_articles_%s.duckdb",
+    gsub("\\.", "-", data_version)
+  )
   database_path <- fs::path(output_dir, database_file)
   manifest_path <- fs::path(output_dir, package_config()$manifest_asset)
   checksums_path <- fs::path(output_dir, package_config()$checksum_asset)
@@ -212,10 +279,26 @@ build_database_release <- function(
 
   DBI::dbWithTransaction(connection, {
     create_database_tables(connection)
-    if (nrow(articles) > 0L) DBI::dbAppendTable(connection, "articles", as.data.frame(articles))
-    if (nrow(embedding_table) > 0L) DBI::dbAppendTable(connection, "embeddings", as.data.frame(embedding_table))
-    if (nrow(lexical_documents) > 0L) DBI::dbAppendTable(connection, "lexical_documents", as.data.frame(lexical_documents))
-    metadata <- release_metadata(data_version, articles, model_name, embedding_info, comparison)
+    if (nrow(articles) > 0L) {
+      DBI::dbAppendTable(connection, "articles", as.data.frame(articles))
+    }
+    if (nrow(embedding_table) > 0L) {
+      DBI::dbAppendTable(connection, "embeddings", as.data.frame(embedding_table))
+    }
+    if (nrow(lexical_documents) > 0L) {
+      DBI::dbAppendTable(
+        connection,
+        "lexical_documents",
+        as.data.frame(lexical_documents)
+      )
+    }
+    metadata <- release_metadata(
+      data_version,
+      articles,
+      model_name,
+      embedding_info,
+      comparison
+    )
     DBI::dbAppendTable(connection, "database_metadata", as.data.frame(metadata))
     write_database_indexes(connection)
   })
@@ -233,16 +316,29 @@ build_database_release <- function(
     embedding_status = embedding_info$status,
     embedding_dimensions = embedding_info$dimensions,
     embedding_normalized = embedding_info$normalized,
-    query_prefix = "query: ",
-    passage_prefix = "passage: ",
+    query_prefix = package_config()$query_prefix,
+    passage_prefix = package_config()$passage_prefix,
+    semantic_index_version = package_config()$semantic_index_version,
     minimum_package_version = package_config()$minimum_package_version,
     lexical_index_version = package_config()$lexical_index_version,
     lexical_components = "tfidf:0.45,bm25:0.35,exact:0.20",
     sha256 = hash
   )
-  jsonlite::write_json(manifest, manifest_path, pretty = TRUE, auto_unbox = TRUE, na = "null")
+  jsonlite::write_json(
+    manifest,
+    manifest_path,
+    pretty = TRUE,
+    auto_unbox = TRUE,
+    na = "null"
+  )
   writeLines(paste(hash, database_file), checksums_path, useBytes = TRUE)
-  write_release_notes(notes_path, data_version, comparison, embedding_info)
+  write_release_notes(
+    notes_path,
+    data_version,
+    comparison,
+    embedding_info,
+    model_name
+  )
 
   release <- structure(
     list(

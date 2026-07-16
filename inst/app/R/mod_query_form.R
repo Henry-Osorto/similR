@@ -58,7 +58,7 @@ mod_query_form_ui <- function(id, default_engine = "lexical") {
               choices = c(
                 "Automático" = "auto",
                 "Lexical" = "lexical",
-                "Semántico (Fase 4)" = "semantic"
+                "Semántico" = "semantic"
               ),
               selected = default_engine
             )

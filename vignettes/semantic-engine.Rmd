@@ -1,0 +1,73 @@
+---
+title: "Motor semántico local"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Motor semántico local}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE, collapse = TRUE, comment = "#>")
+```
+
+## Arquitectura
+
+El motor semántico utiliza `reticulate` para invocar `sentence-transformers`. El paquete declara sus dependencias mediante `py_require()`, pero Python no se inicializa al cargar `similR`.
+
+```r
+library(similR)
+install_semantic_engine()
+download_embedding_model()
+check_semantic_engine()
+```
+
+El modelo predeterminado es `intfloat/multilingual-e5-base`. Los documentos se codifican con el prefijo `passage: ` y las consultas con `query: `.
+
+## Generar embeddings administrativos
+
+```r
+embeddings <- generate_article_embeddings(
+  processed,
+  previous_database = "release/2026.06/university_articles_2026-06.duckdb",
+  model_name = "intfloat/multilingual-e5-base",
+  batch_size = 32
+)
+```
+
+La salida contiene un vector por artículo y dimensión. Los artículos sin cambios se omiten cuando la base anterior usa el mismo modelo, prefijos y normalización.
+
+## Construcción integrada
+
+```r
+release <- build_database_release(
+  data = processed,
+  previous_database = "release/2026.06/university_articles_2026-06.duckdb",
+  data_version = "2026.07",
+  model_name = "intfloat/multilingual-e5-base",
+  output_dir = "release/2026.07",
+  generate_embeddings = TRUE,
+  overwrite = TRUE
+)
+```
+
+## Ranking
+
+Para cada dimensión se calcula la similitud coseno entre la consulta y los artículos. Como los vectores están normalizados, el producto matricial equivale a la similitud coseno. La puntuación se transforma al intervalo de cero a uno y después se combina con los pesos dimensionales.
+
+```r
+recommend_articles(
+  title = "AI literacy and entrepreneurship",
+  method = "structural equation model",
+  context = "university students",
+  engine = "semantic"
+)
+```
+
+## Respaldo lexical
+
+```r
+run_app(engine = "auto")
+```
+
+El modo automático utiliza el motor lexical cuando falta Python, el modelo local o una base con embeddings completos y compatibles.

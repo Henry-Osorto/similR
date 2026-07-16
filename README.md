@@ -1,40 +1,27 @@
-
 # similR
 
 `similR` es un paquete de R y una aplicación Shiny local para descubrir artículos científicos institucionales relacionados con una nueva investigación.
 
-## Estado de desarrollo
+## Capacidades actuales
 
-La Fase 3 incorpora:
-
-- ciclo local de datos y actualización mediante GitHub Releases;
-- importación y procesamiento de bases bibliográficas institucionales;
-- limpieza, deduplicación e identificadores estables;
+- descarga y actualización de bases DuckDB publicadas mediante GitHub Releases;
+- importación, limpieza, deduplicación y versionado de registros bibliográficos;
 - construcción de textos para tema, propósito, método, datos y contexto;
-- base DuckDB y preparación incremental de Releases;
-- índice lexical local mediante matrices dispersas;
-- similitud coseno TF-IDF;
-- ranking BM25;
-- coincidencias exactas de métodos, países, poblaciones, bases de datos y DOI;
-- ponderación multidimensional con renormalización de campos vacíos;
-- función programática `recommend_articles()`;
-- aplicación Shiny modular con tabla, filtros, descarga y detalles.
+- motor lexical local basado en TF-IDF, BM25 y coincidencias exactas;
+- motor semántico opcional basado en embeddings multilingües;
+- integración R–Python mediante `reticulate`;
+- selección automática del motor disponible;
+- aplicación Shiny modular y ejecución programática.
 
-El motor semántico con embeddings y Python se incorporará en la Fase 4. Mientras tanto, `engine = "auto"` selecciona el motor lexical.
-
-## Instalación durante el desarrollo
+## Instalación desde GitHub
 
 ```r
 install.packages("pak")
-
-pak::pkg_install(
-  "REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY"
-)
-
+pak::pkg_install("REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY")
 library(similR)
 ```
 
-## Configurar el repositorio de datos
+Configure el repositorio que contiene las Releases de datos:
 
 ```r
 options(
@@ -43,19 +30,74 @@ options(
 )
 ```
 
-Antes de publicar el paquete, estos valores deben definirse en `R/config.R`.
-
-## Abrir la aplicación
+## Inicio rápido
 
 ```r
-run_app()
+run_app(engine = "auto")
 ```
 
-También puede solicitar explícitamente el motor lexical:
+En modo automático:
+
+1. se usa el motor semántico cuando Python, el modelo local y los embeddings de la base son compatibles;
+2. en caso contrario, se usa el motor lexical sin interrumpir la aplicación.
+
+## Motor lexical
 
 ```r
 run_app(engine = "lexical")
 ```
+
+Para cada dimensión se calcula:
+
+```text
+Lexical = 0.45 × TF-IDF + 0.35 × BM25 + 0.20 × ExactMatch
+```
+
+## Motor semántico
+
+El motor semántico es opcional. El paquete puede instalarse, cargarse y ejecutar el motor lexical sin Python.
+
+### 1. Preparar Python
+
+```r
+install_semantic_engine()
+```
+
+La función declara un entorno compatible con Python 3.10 o superior y las dependencias `sentence-transformers` y `numpy`. No descarga el modelo.
+
+### 2. Descargar el modelo
+
+```r
+download_embedding_model()
+```
+
+En una sesión no interactiva:
+
+```r
+download_embedding_model(force = TRUE)
+```
+
+El modelo predeterminado es:
+
+```text
+intfloat/multilingual-e5-base
+```
+
+La copia local se guarda en el directorio de caché obtenido mediante `tools::R_user_dir("similR", "cache")`.
+
+### 3. Comprobar el estado
+
+```r
+check_semantic_engine()
+```
+
+### 4. Ejecutar
+
+```r
+run_app(engine = "semantic")
+```
+
+Los textos no se envían a una API externa. Tanto el modelo como la base y el ranking se ejecutan localmente.
 
 ## Recomendación programática
 
@@ -66,56 +108,17 @@ results <- recommend_articles(
   method = "Survey and structural equation model",
   data = "Questionnaire applied to university students",
   context = "University students in Honduras",
-  engine = "lexical",
+  engine = "auto",
   n = 20
 )
 
 results
 ```
 
-El resultado contiene el índice general, las cinco puntuaciones dimensionales y una explicación determinística.
-
-## Fórmula lexical
-
-Para cada dimensión se calcula:
-
-```text
-Lexical = 0.45 × TF-IDF + 0.35 × BM25 + 0.20 × ExactMatch
-```
-
-Después, las dimensiones se combinan con los pesos predeterminados:
+## Construir una Release lexical
 
 ```r
-c(
-  theme = 0.20,
-  method = 0.22,
-  data = 0.10,
-  context = 0.23,
-  purpose = 0.25
-)
-```
-
-Los pesos se renormalizan automáticamente cuando el usuario deja campos vacíos.
-
-## Filtros
-
-```r
-recommend_articles(
-  title = "Digital taxation and innovation",
-  filters = list(
-    year_min = 2020,
-    year_max = 2026,
-    source_title = "Economics"
-  )
-)
-```
-
-## Construir una Release de datos
-
-```r
-raw <- import_article_data(
-  "data-raw/input/institutional_articles.csv"
-)
+raw <- import_article_data("data-raw/input/institutional_articles.csv")
 
 processed <- process_scopus(
   raw,
@@ -138,11 +141,37 @@ release <- build_database_release(
   data_version = "2026.07",
   output_dir = "release/2026.07"
 )
+```
+
+## Construir una Release semántica
+
+Primero instale el motor y descargue el mismo modelo que utilizarán los usuarios:
+
+```r
+install_semantic_engine()
+download_embedding_model()
+```
+
+Después genere los embeddings dentro del flujo de construcción:
+
+```r
+release <- build_database_release(
+  data = processed,
+  previous_database = NULL,
+  data_version = "2026.07",
+  model_name = "intfloat/multilingual-e5-base",
+  output_dir = "release/2026.07",
+  generate_embeddings = TRUE,
+  batch_size = 32,
+  overwrite = TRUE
+)
 
 validate_release(release)
 ```
 
-La carpeta generada contiene:
+En actualizaciones posteriores, `generate_article_embeddings()` codifica únicamente artículos nuevos o modificados cuando la base anterior es compatible. `build_database_release()` reutiliza los embeddings de los artículos sin cambios.
+
+## Archivos de la Release
 
 ```text
 university_articles_2026-07.duckdb
@@ -151,9 +180,9 @@ checksums.txt
 release_notes.md
 ```
 
-Los primeros tres archivos se publican como assets de la misma GitHub Release.
+Los primeros tres archivos deben cargarse como assets de una misma GitHub Release.
 
-## Actualizar la base local
+## Actualización local
 
 ```r
 check_database_update()
@@ -161,10 +190,6 @@ update_database()
 database_info()
 ```
 
-## Privacidad
+## Privacidad y uso responsable
 
-El motor lexical funciona completamente en local. La aplicación no implementa telemetría y no envía las descripciones de investigación a servicios externos.
-
-## Uso responsable
-
-Las recomendaciones indican proximidad documental; no sustituyen la revisión académica. Cada artículo debe citarse únicamente cuando contribuya de manera sustantiva a la investigación.
+Los motores disponibles funcionan localmente y no implementan telemetría. Las recomendaciones indican proximidad documental; cada artículo debe revisarse y citarse únicamente cuando contribuya sustantivamente a la investigación.

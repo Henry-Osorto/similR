@@ -1,7 +1,8 @@
+
 Package: similR
 Type: Package
 Title: Local Recommendation of Institutional Scientific Literature
-Version: 0.3.0.9000
+Version: 0.4.0.9000
 Authors@R:
     person(
       given = "Henry",
@@ -14,13 +15,15 @@ Description: Provides a local Shiny application and reproducible data pipeline
     cleans, deduplicates, versions, validates, and stores bibliographic records
     in DuckDB databases distributed through GitHub Releases. The lexical
     recommendation engine combines TF-IDF, BM25, exact-term matching, and
-    dimension-specific weights. A semantic engine is designed as an optional
-    extension for a subsequent development phase.
+    dimension-specific weights. An optional local semantic engine integrates
+    multilingual Sentence Transformer embeddings through reticulate while
+    preserving a fully functional lexical fallback when Python is unavailable.
 License: MIT + file LICENSE
 URL: https://github.com/REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY
 BugReports: https://github.com/REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
 Depends:
     R (>= 4.2.0)
 Imports:
@@ -39,6 +42,7 @@ Imports:
     purrr,
     readr,
     rlang,
+    reticulate (>= 1.41.0),
     shiny (>= 1.8.0),
     stringi,
     stringr,
@@ -54,4 +58,5 @@ Suggests:
     withr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
-Config/roxygen2/version: 8.0.0
+
+SystemRequirements: Python (>= 3.10, optional; required only for the semantic engine)

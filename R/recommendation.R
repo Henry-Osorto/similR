@@ -1,9 +1,8 @@
-
 #' Recommend related institutional scientific articles
 #'
 #' Compares a research description with the locally installed bibliographic
-#' database. In Phase 3 the lexical engine combines TF-IDF cosine similarity,
-#' BM25, and exact-term overlap independently for five dimensions.
+#' database. The lexical engine combines TF-IDF, BM25, and exact-term overlap.
+#' The semantic engine compares normalized multilingual sentence embeddings.
 #'
 #' @param title Research title or thematic description.
 #' @param purpose Research purpose or objective.
@@ -25,7 +24,7 @@
 #'   purpose = "Assess whether AI literacy increases entrepreneurial intention",
 #'   method = "Survey and structural equation model",
 #'   context = "University students in Honduras",
-#'   engine = "lexical"
+#'   engine = "auto"
 #' )
 #' }
 recommend_articles <- function(
@@ -38,7 +37,13 @@ recommend_articles <- function(
     n = 20,
     weights = NULL,
     filters = list()) {
-  engine <- select_engine(engine)
+  requested_engine <- match.arg(engine)
+  database_path <- local_database_path(must_exist = TRUE)
+  resolved_engine <- select_engine(
+    requested_engine,
+    database_path = database_path,
+    notify = identical(requested_engine, "auto")
+  )
   query <- prepare_user_query(
     title = title,
     purpose = purpose,
@@ -47,8 +52,8 @@ recommend_articles <- function(
     context = context
   )
 
-  if (identical(engine, "lexical")) {
-    index <- load_lexical_index(local_database_path(must_exist = TRUE))
+  if (identical(resolved_engine, "lexical")) {
+    index <- load_lexical_index(database_path)
     return(rank_articles_lexical(
       query = query,
       lexical_index = index,
@@ -58,5 +63,11 @@ recommend_articles <- function(
     ))
   }
 
-  rlang::abort("El motor solicitado todavía no está disponible.")
+  rank_articles_semantic(
+    query = query,
+    database_path = database_path,
+    n = n,
+    weights = weights,
+    filters = filters
+  )
 }

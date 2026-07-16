@@ -32,6 +32,8 @@ database_info <- function() {
         minimum_package_version = NA_character_,
         lexical_index_version = NA_character_,
         lexical_components = NA_character_,
+        semantic_index_version = NA_character_,
+        semantic_database_ready = FALSE,
         compatible = NA
       ),
       class = "similR_database_info"
@@ -65,6 +67,9 @@ database_info <- function() {
       minimum_package_version = manifest$minimum_package_version,
       lexical_index_version = manifest$lexical_index_version %||% NA_character_,
       lexical_components = manifest$lexical_components %||% NA_character_,
+      semantic_index_version = manifest$semantic_index_version %||% NA_character_,
+      semantic_database_ready = identical(manifest$embedding_status, "complete") &&
+        isTRUE(manifest$embedding_normalized) && manifest$embedding_dimensions > 0L,
       compatible = compatible
     ),
     class = "similR_database_info"
@@ -90,6 +95,9 @@ print.similR_database_info <- function(x, ...) {
   cat("  Esquema:              ", x$database_schema_version, "\n", sep = "")
   if (!is.na(x$lexical_index_version)) {
     cat("  Índice lexical:       ", x$lexical_index_version, "\n", sep = "")
+  }
+  if (!is.na(x$semantic_index_version)) {
+    cat("  Índice semántico:     ", x$semantic_index_version, "\n", sep = "")
   }
   cat("  Compatible:           ", if (isTRUE(x$compatible)) "sí" else "no", "\n", sep = "")
   invisible(x)

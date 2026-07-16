@@ -5,6 +5,7 @@ runtime <- getOption(
   "similR.runtime",
   list(
     engine = "lexical",
+    requested_engine = "auto",
     update_status = list(update_available = FALSE, error = NULL),
     package_version = NA_character_
   )

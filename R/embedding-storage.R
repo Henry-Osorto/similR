@@ -57,12 +57,22 @@ standardize_embeddings_input <- function(embeddings, articles, model_name) {
   } else {
     rep(TRUE, nrow(embeddings))
   }
+  if (anyNA(normalized)) {
+    rlang::abort("`normalized` no puede contener valores ausentes.")
+  }
   model_values <- if ("model_name" %in% names(embeddings)) {
     as.character(embeddings$model_name)
   } else {
     rep(model_name, nrow(embeddings))
   }
   model_values[is_blank_vector(model_values)] <- model_name
+  if (any(model_values != model_name)) {
+    rlang::abort("Todos los embeddings deben corresponder a `model_name`.")
+  }
+  keys <- paste(embeddings$article_id, embeddings$dimension, sep = "\u241f")
+  if (anyDuplicated(keys)) {
+    rlang::abort("Existen embeddings duplicados para un artículo y dimensión.")
+  }
 
   content_lookup <- stats::setNames(articles$content_hash, articles$article_id)
   tibble::tibble(
@@ -73,8 +83,7 @@ standardize_embeddings_input <- function(embeddings, articles, model_name) {
     normalized = normalized,
     embedding_blob = vapply(vectors, serialize_embedding_vector, character(1)),
     content_hash = unname(content_lookup[as.character(embeddings$article_id)])
-  ) |>
-    dplyr::distinct(.data$article_id, .data$dimension, .keep_all = TRUE)
+  )
 }
 
 load_previous_embeddings <- function(previous_database) {

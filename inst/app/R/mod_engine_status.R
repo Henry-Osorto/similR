@@ -1,4 +1,3 @@
-
 mod_engine_status_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::value_box(
@@ -19,7 +18,7 @@ mod_engine_status_server <- function(id, engine) {
       if (identical(engine(), "lexical")) {
         shiny::tags$small("TF-IDF + BM25 + términos exactos")
       } else {
-        shiny::tags$small("Embeddings locales")
+        shiny::tags$small("Embeddings multilingües procesados localmente")
       }
     })
   })
