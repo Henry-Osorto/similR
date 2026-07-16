@@ -6,7 +6,7 @@ Authors@R:
     person(
       given = "Henry",
       family = "Osorto",
-      email = "REPLACE_WITH_VALID_EMAIL@example.org",
+      email = "henry.osorto@unitec.edu.hn",
       role = c("aut", "cre")
     )
 Description: Provides a local Shiny application and reproducible data pipeline
