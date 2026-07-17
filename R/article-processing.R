@@ -118,23 +118,24 @@ resolve_column_map <- function(data, column_map = NULL, source = "auto") {
 }
 
 pull_mapped_column <- function(
-    data,
+    input_data,
     map,
     name,
     default = NA_character_) {
   
-  if (!inherits(data, "data.frame")) {
+  if (!base::is.data.frame(input_data)) {
     rlang::abort(
-      "El objeto interno `data` debe ser un data.frame o tibble.",
+      "El objeto interno `input_data` debe ser un data.frame o tibble.",
       class = "similR_invalid_internal_data"
     )
   }
   
-  number_rows <- base::NROW(data)
+  number_rows <- base::NROW(input_data)
   
   if (
     length(number_rows) != 1L ||
     is.na(number_rows) ||
+    !is.finite(number_rows) ||
     number_rows < 0L
   ) {
     rlang::abort(
@@ -143,19 +144,25 @@ pull_mapped_column <- function(
     )
   }
   
-  column <- unname(map[name])
+  column <- map[[name]]
   
   column_missing <-
+    is.null(column) ||
     length(column) != 1L ||
     is.na(column) ||
     !nzchar(column) ||
-    !(column %in% names(data))
+    !(column %in% names(input_data))
   
   if (column_missing) {
-    return(rep_len(default, number_rows))
+    return(
+      base::rep_len(
+        default,
+        number_rows
+      )
+    )
   }
   
-  value <- data[[column]]
+  value <- input_data[[column]]
   
   if (length(value) != number_rows) {
     rlang::abort(
@@ -172,28 +179,169 @@ pull_mapped_column <- function(
   value
 }
 
-canonicalize_bibliographic_data <- function(data, map) {
-  author_keywords <- pull_mapped_column(data, map, "author_keywords", "")
-  index_keywords <- pull_mapped_column(data, map, "index_keywords", "")
-
-  result <- tibble::tibble(
-    title = normalize_text(pull_mapped_column(data, map, "title", "")),
-    authors = clean_authors(pull_mapped_column(data, map, "authors", "")),
-    abstract = normalize_text(pull_mapped_column(data, map, "abstract", "")),
-    keywords = clean_keywords(author_keywords, index_keywords),
-    doi = normalize_text(pull_mapped_column(data, map, "doi", "")),
-    year = suppressWarnings(as.integer(as.character(pull_mapped_column(data, map, "year", NA_integer_)))),
-    source_title = normalize_text(pull_mapped_column(data, map, "source_title", "")),
-    theme = normalize_text(pull_mapped_column(data, map, "theme", "")),
-    purpose = normalize_text(pull_mapped_column(data, map, "purpose", "")),
-    method = normalize_text(pull_mapped_column(data, map, "method", "")),
-    data = normalize_text(pull_mapped_column(data, map, "data", "")),
-    context = normalize_text(pull_mapped_column(data, map, "context", ""))
+canonicalize_bibliographic_data <- function(
+    input_data,
+    map) {
+  
+  # Extraer todas las columnas antes de construir el tibble.
+  # Esto evita que la columna canónica `data` oculte la base original.
+  
+  mapped_title <- pull_mapped_column(
+    input_data,
+    map,
+    "title",
+    ""
   )
-
-  result$doi_normalized <- normalize_doi(result$doi)
-  result$title_normalized <- normalize_for_matching(result$title)
-  result$authors_normalized <- normalize_authors_for_id(result$authors)
+  
+  mapped_authors <- pull_mapped_column(
+    input_data,
+    map,
+    "authors",
+    ""
+  )
+  
+  mapped_abstract <- pull_mapped_column(
+    input_data,
+    map,
+    "abstract",
+    ""
+  )
+  
+  mapped_author_keywords <- pull_mapped_column(
+    input_data,
+    map,
+    "author_keywords",
+    ""
+  )
+  
+  mapped_index_keywords <- pull_mapped_column(
+    input_data,
+    map,
+    "index_keywords",
+    ""
+  )
+  
+  mapped_doi <- pull_mapped_column(
+    input_data,
+    map,
+    "doi",
+    ""
+  )
+  
+  mapped_year <- pull_mapped_column(
+    input_data,
+    map,
+    "year",
+    NA_integer_
+  )
+  
+  mapped_source_title <- pull_mapped_column(
+    input_data,
+    map,
+    "source_title",
+    ""
+  )
+  
+  mapped_theme <- pull_mapped_column(
+    input_data,
+    map,
+    "theme",
+    ""
+  )
+  
+  mapped_purpose <- pull_mapped_column(
+    input_data,
+    map,
+    "purpose",
+    ""
+  )
+  
+  mapped_method <- pull_mapped_column(
+    input_data,
+    map,
+    "method",
+    ""
+  )
+  
+  mapped_data_field <- pull_mapped_column(
+    input_data,
+    map,
+    "data",
+    ""
+  )
+  
+  mapped_context <- pull_mapped_column(
+    input_data,
+    map,
+    "context",
+    ""
+  )
+  
+  result <- tibble::tibble(
+    title = normalize_text(
+      mapped_title
+    ),
+    
+    authors = clean_authors(
+      mapped_authors
+    ),
+    
+    abstract = normalize_text(
+      mapped_abstract
+    ),
+    
+    keywords = clean_keywords(
+      mapped_author_keywords,
+      mapped_index_keywords
+    ),
+    
+    doi = normalize_text(
+      mapped_doi
+    ),
+    
+    year = suppressWarnings(
+      as.integer(
+        as.character(mapped_year)
+      )
+    ),
+    
+    source_title = normalize_text(
+      mapped_source_title
+    ),
+    
+    theme = normalize_text(
+      mapped_theme
+    ),
+    
+    purpose = normalize_text(
+      mapped_purpose
+    ),
+    
+    method = normalize_text(
+      mapped_method
+    ),
+    
+    data = normalize_text(
+      mapped_data_field
+    ),
+    
+    context = normalize_text(
+      mapped_context
+    )
+  )
+  
+  result$doi_normalized <- normalize_doi(
+    result$doi
+  )
+  
+  result$title_normalized <- normalize_for_matching(
+    result$title
+  )
+  
+  result$authors_normalized <- normalize_authors_for_id(
+    result$authors
+  )
+  
   result
 }
 
