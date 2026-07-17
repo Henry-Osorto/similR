@@ -7,8 +7,8 @@
 package_config <- function() {
   list(
     package_name = getOption("similR.package_name", .similr_package_name),
-    github_owner = getOption("similR.github_owner", "REPLACE_GITHUB_OWNER"),
-    github_repo = getOption("similR.github_repo", "REPLACE_GITHUB_REPOSITORY"),
+    github_owner = getOption("similR.github_owner", "Henry-Osorto"),
+    github_repo = getOption("similR.github_repo", "similR"),
     github_api_base = getOption("similR.github_api_base", "https://api.github.com"),
     github_api_version = getOption("similR.github_api_version", "2022-11-28"),
     database_asset_pattern = getOption(
