@@ -346,12 +346,58 @@ canonicalize_bibliographic_data <- function(
 }
 
 row_completeness <- function(data) {
+  ensure_data_frame(
+    data,
+    arg = "data"
+  )
+  
   fields <- intersect(
-    c("title", "authors", "abstract", "keywords", "doi_normalized", "source_title", "theme", "purpose", "method", "data", "context"),
+    c(
+      "title",
+      "authors",
+      "abstract",
+      "keywords",
+      "doi_normalized",
+      "source_title",
+      "theme",
+      "purpose",
+      "method",
+      "data",
+      "context"
+    ),
     names(data)
   )
-  if (length(fields) == 0L) return(rep(0, nrow(data)))
-  rowSums(vapply(data[fields], function(x) !is_blank_vector(x), logical(nrow(data))))
+  
+  number_rows <- base::NROW(data)
+  
+  if (number_rows == 0L) {
+    return(integer())
+  }
+  
+  if (length(fields) == 0L) {
+    return(
+      base::rep.int(
+        0L,
+        number_rows
+      )
+    )
+  }
+  
+  completeness_by_field <- lapply(
+    fields,
+    function(field) {
+      as.integer(
+        !is_blank_vector(
+          data[[field]]
+        )
+      )
+    }
+  )
+  
+  Reduce(
+    `+`,
+    completeness_by_field
+  )
 }
 
 merge_keyword_values <- function(x) {
