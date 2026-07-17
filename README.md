@@ -17,7 +17,7 @@
 
 ```r
 install.packages("pak")
-pak::pkg_install("REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY")
+pak::pkg_install("Henry-Osorto/similR")
 library(similR)
 ```
 
@@ -25,8 +25,8 @@ Configure el repositorio que contiene las Releases de datos:
 
 ```r
 options(
-  similR.github_owner = "YOUR_GITHUB_USER_OR_ORGANIZATION",
-  similR.github_repo = "YOUR_DATA_REPOSITORY"
+  similR.github_owner = "Henry-Osorto",
+  similR.github_repo = "similR"
 )
 ```
 
