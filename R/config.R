@@ -42,13 +42,32 @@ package_config <- function() {
 
 #' Validate GitHub configuration
 #' @noRd
-validate_github_config <- function(config = package_config()) {
-  placeholders <- c("Henry-Osorto", "similR")
-  invalid <- is.null(config$github_owner) || is.null(config$github_repo) ||
-    !nzchar(config$github_owner) || !nzchar(config$github_repo) ||
-    config$github_owner %in% placeholders || config$github_repo %in% placeholders
-
-  if (invalid) {
+validate_github_config <- function(
+    config = package_config()) {
+  
+  placeholder_values <- c(
+    "",
+    "REPLACE_GITHUB_OWNER",
+    "REPLACE_GITHUB_REPOSITORY",
+    "YOUR_GITHUB_OWNER",
+    "YOUR_GITHUB_REPOSITORY"
+  )
+  
+  owner_invalid <-
+    is.null(config$github_owner) ||
+    length(config$github_owner) != 1L ||
+    is.na(config$github_owner) ||
+    !nzchar(trimws(config$github_owner)) ||
+    config$github_owner %in% placeholder_values
+  
+  repo_invalid <-
+    is.null(config$github_repo) ||
+    length(config$github_repo) != 1L ||
+    is.na(config$github_repo) ||
+    !nzchar(trimws(config$github_repo)) ||
+    config$github_repo %in% placeholder_values
+  
+  if (owner_invalid || repo_invalid) {
     rlang::abort(
       c(
         "No se ha configurado el repositorio de datos de GitHub.",
@@ -60,7 +79,7 @@ validate_github_config <- function(config = package_config()) {
       class = "similR_github_not_configured"
     )
   }
-
+  
   invisible(config)
 }
 
