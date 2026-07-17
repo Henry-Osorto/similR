@@ -1,4 +1,3 @@
-
 Package: similR
 Type: Package
 Title: Local Recommendation of Institutional Scientific Literature
@@ -58,5 +57,4 @@ Suggests:
     withr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
-
 SystemRequirements: Python (>= 3.10, optional; required only for the semantic engine)
