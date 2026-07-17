@@ -1,0 +1,18 @@
+{
+  "data_version": "2026.07",
+  "published_at": "2026-07-16",
+  "database_file": "university_articles_2026-07.duckdb",
+  "database_schema_version": "1.0",
+  "number_of_articles": 839,
+  "embedding_model": "intfloat/multilingual-e5-base",
+  "embedding_status": "absent",
+  "embedding_dimensions": 0,
+  "embedding_normalized": false,
+  "query_prefix": "query: ",
+  "passage_prefix": "passage: ",
+  "semantic_index_version": "1.0",
+  "minimum_package_version": "0.4.0",
+  "lexical_index_version": "1.0",
+  "lexical_components": "tfidf:0.45,bm25:0.35,exact:0.20",
+  "sha256": "614276f739b384ae37b14d098e79bcc89f84b63d76fe0bd8b773cd5da5068c62"
+}
