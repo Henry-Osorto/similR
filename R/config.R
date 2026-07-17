@@ -43,7 +43,7 @@ package_config <- function() {
 #' Validate GitHub configuration
 #' @noRd
 validate_github_config <- function(config = package_config()) {
-  placeholders <- c("REPLACE_GITHUB_OWNER", "REPLACE_GITHUB_REPOSITORY")
+  placeholders <- c("Henry-Osorto", "similR")
   invalid <- is.null(config$github_owner) || is.null(config$github_repo) ||
     !nzchar(config$github_owner) || !nzchar(config$github_repo) ||
     config$github_owner %in% placeholders || config$github_repo %in% placeholders
@@ -69,6 +69,6 @@ validate_github_config <- function(config = package_config()) {
 installed_package_version <- function() {
   tryCatch(
     as.character(utils::packageVersion(.similr_package_name)),
-    error = function(e) "0.4.0.9000"
+    error = function(e) "0.4.0.9003"
   )
 }
