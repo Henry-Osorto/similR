@@ -35,21 +35,111 @@ cosine_similarity <- function(x, y) {
 
 #' TF-IDF cosine similarity for one dimension
 #' @noRd
-tfidf_similarity <- function(query_text, dimension_index) {
-  number_documents <- length(dimension_index$article_id)
-  terms <- query_term_counts(query_text, dimension_index$vocabulary)
-  if (length(terms$positions) == 0L) return(rep(0, number_documents))
-
-  query <- Matrix::sparseMatrix(
-    i = rep.int(1L, length(terms$positions)),
-    j = terms$positions,
-    x = log1p(terms$counts),
-    dims = c(1L, length(dimension_index$vocabulary))
+tfidf_similarity <- function(
+    query_text,
+    dimension_index) {
+  
+  number_documents <- length(
+    dimension_index$article_id
   )
-  query <- query %*% Matrix::Diagonal(x = dimension_index$tfidf_idf)
-  query <- normalize_sparse_rows(query)
-  scores <- as.numeric(dimension_index$tfidf %*% t(query))
-  pmin(1, pmax(0, scores))
+  
+  terms <- query_term_counts(
+    query_text,
+    dimension_index$vocabulary
+  )
+  
+  if (length(terms$positions) == 0L) {
+    return(
+      rep(
+        0,
+        number_documents
+      )
+    )
+  }
+  
+  number_terms <- length(
+    dimension_index$vocabulary
+  )
+  
+  if (number_terms == 0L) {
+    return(
+      rep(
+        0,
+        number_documents
+      )
+    )
+  }
+  
+  if (
+    length(dimension_index$tfidf_idf) !=
+    number_terms
+  ) {
+    rlang::abort(
+      paste(
+        "El vector IDF no coincide con",
+        "el vocabulario del índice lexical."
+      ),
+      class = "similR_invalid_lexical_index"
+    )
+  }
+  
+  # Construir directamente el vector TF-IDF
+  # de la consulta.
+  query_weights <- numeric(
+    number_terms
+  )
+  
+  query_weights[
+    terms$positions
+  ] <- log1p(
+    terms$counts
+  ) * dimension_index$tfidf_idf[
+    terms$positions
+  ]
+  
+  query_norm <- sqrt(
+    sum(
+      query_weights^2
+    )
+  )
+  
+  if (
+    !is.finite(query_norm) ||
+    query_norm <= 0
+  ) {
+    return(
+      rep(
+        0,
+        number_documents
+      )
+    )
+  }
+  
+  query_weights <-
+    query_weights / query_norm
+  
+  # Forzar explícitamente una matriz columna.
+  # Así se evita utilizar t() sobre un objeto
+  # que podría simplificarse a vector.
+  query_column <- Matrix::Matrix(
+    query_weights,
+    nrow = number_terms,
+    ncol = 1L,
+    sparse = TRUE
+  )
+  
+  scores <- as.numeric(
+    dimension_index$tfidf %*%
+      query_column
+  )
+  
+  pmin(
+    1,
+    pmax(
+      0,
+      scores
+    )
+  )
 }
 
 #' BM25 similarity for one dimension
