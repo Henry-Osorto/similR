@@ -1,0 +1,25 @@
+install.packages(c(
+  "devtools",
+  "rcmdcheck",
+  "duckdb",
+  "DBI",
+  "dplyr",
+  "readr",
+  "janitor",
+  "stringr",
+  "stringi",
+  "jsonlite",
+  "digest",
+  "fs",
+  "httr2",
+  "shiny",
+  "bslib",
+  "testthat"
+))
+
+devtools::document()
+devtools::test()
+
+rcmdcheck::rcmdcheck(
+  args = c("--no-manual", "--as-cran")
+)

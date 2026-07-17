@@ -19,8 +19,8 @@ Description: Provides a local Shiny application and reproducible data pipeline
     multilingual Sentence Transformer embeddings through reticulate while
     preserving a fully functional lexical fallback when Python is unavailable.
 License: MIT + file LICENSE
-URL: https://github.com/Henry-Osorto/similR
-BugReports: https://github.com/Henry-Osorto/similR/issues
+URL: https://github.com/REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY
+BugReports: https://github.com/REPLACE_GITHUB_OWNER/REPLACE_GITHUB_REPOSITORY/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
