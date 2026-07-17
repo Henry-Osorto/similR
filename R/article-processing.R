@@ -117,12 +117,59 @@ resolve_column_map <- function(data, column_map = NULL, source = "auto") {
   list(data = data, map = resolved, source = source)
 }
 
-pull_mapped_column <- function(data, map, name, default = NA_character_) {
-  column <- map[[name]]
-  if (is.na(column) || !column %in% names(data)) {
-    return(rep(default, nrow(data)))
+pull_mapped_column <- function(
+    data,
+    map,
+    name,
+    default = NA_character_) {
+  
+  if (!inherits(data, "data.frame")) {
+    rlang::abort(
+      "El objeto interno `data` debe ser un data.frame o tibble.",
+      class = "similR_invalid_internal_data"
+    )
   }
-  data[[column]]
+  
+  number_rows <- base::NROW(data)
+  
+  if (
+    length(number_rows) != 1L ||
+    is.na(number_rows) ||
+    number_rows < 0L
+  ) {
+    rlang::abort(
+      "No fue posible determinar el número de registros bibliográficos.",
+      class = "similR_invalid_row_count"
+    )
+  }
+  
+  column <- unname(map[name])
+  
+  column_missing <-
+    length(column) != 1L ||
+    is.na(column) ||
+    !nzchar(column) ||
+    !(column %in% names(data))
+  
+  if (column_missing) {
+    return(rep_len(default, number_rows))
+  }
+  
+  value <- data[[column]]
+  
+  if (length(value) != number_rows) {
+    rlang::abort(
+      sprintf(
+        "La columna `%s` tiene %s valores, pero se esperaban %s.",
+        column,
+        length(value),
+        number_rows
+      ),
+      class = "similR_invalid_mapped_column"
+    )
+  }
+  
+  value
 }
 
 canonicalize_bibliographic_data <- function(data, map) {
