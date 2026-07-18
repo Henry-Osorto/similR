@@ -1,0 +1,70 @@
+*** Begin Patch
+*** Update File: R/lexical-similarity.R
+@@
+ tfidf_similarity <- function(query_text, dimension_index) {
+   number_documents <- length(dimension_index$article_id)
+   terms <- query_term_counts(query_text, dimension_index$vocabulary)
+   if (length(terms$positions) == 0L) return(rep(0, number_documents))
+-
+-  query <- Matrix::sparseMatrix(
+-    i = rep.int(1L, length(terms$positions)),
+-    j = terms$positions,
+-    x = log1p(terms$counts),
+-    dims = c(1L, length(dimension_index$vocabulary))
+-  )
+-  query <- query %*% Matrix::Diagonal(x = dimension_index$tfidf_idf)
+-  query <- normalize_sparse_rows(query)
+-  scores <- as.numeric(dimension_index$tfidf %*% t(query))
++
++  number_terms <- length(dimension_index$vocabulary)
++
++  if (number_terms == 0L) {
++    return(rep(0, number_documents))
++  }
++
++  if (length(dimension_index$tfidf_idf) != number_terms) {
++    rlang::abort(
++      "El vector IDF no coincide con el vocabulario del índice lexical.",
++      class = "similR_invalid_lexical_index"
++    )
++  }
++
++  # Build the query as a normalized numeric column vector. This avoids
++  # `t()` dispatch problems when a one-row Matrix is simplified to a vector.
++  query_weights <- numeric(number_terms)
++  query_weights[terms$positions] <-
++    log1p(terms$counts) * dimension_index$tfidf_idf[terms$positions]
++
++  query_norm <- sqrt(sum(query_weights^2))
++
++  if (!is.finite(query_norm) || query_norm <= 0) {
++    return(rep(0, number_documents))
++  }
++
++  query_weights <- query_weights / query_norm
++
++  query_column <- Matrix::Matrix(
++    query_weights,
++    nrow = number_terms,
++    ncol = 1L,
++    sparse = TRUE
++  )
++
++  scores <- as.numeric(
++    dimension_index$tfidf %*% query_column
++  )
++
+   pmin(1, pmax(0, scores))
+ }
+*** Update File: tests/testthat/test-lexical-similarity.R
+@@
+   scores <- list(
+     tfidf = similR:::tfidf_similarity(query, dimension),
+     bm25 = similR:::bm25_similarity(query, dimension),
+     exact = similR:::exact_match_score(query, dimension)
+   )
++  expect_length(scores$tfidf, nrow(dimension$tfidf))
++  expect_false(anyNA(scores$tfidf))
++  expect_true(all(is.finite(scores$tfidf)))
+   expect_true(all(vapply(scores, function(x) all(x >= 0 & x <= 1), logical(1))))
+*** End Patch
